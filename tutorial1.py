@@ -11,6 +11,8 @@ from numpy import sign
 def draw_graph(graph, ax=None, node_labels=None):
     n = len(graph["nodes"])
     m = n // 5
+    
+    # Compute layout positions
     pos = {
         i: (
             cos(-(i * 2 * pi * m) / n + 0.5 * pi) / (i * m // n + 1),
@@ -18,22 +20,30 @@ def draw_graph(graph, ax=None, node_labels=None):
         )
         for i in graph["nodes"]
     }
-    colors = (
-        [ord(node_labels[i].upper()) - 65 for i in graph["nodes"]]
-        if node_labels is not None
-        else None
-    )
-    draw(
-        Graph(graph["edges"]),
-        pos=pos,
-        ax=ax,
-        with_labels=True,
-        font_color="white",
-        vmin=0,
-        vmax=10,
-        cmap="tab10",
-        node_color=colors,
-    )
+
+    # Compute colors based on labels, if given
+    if node_labels is not None:
+        colors = [ord(node_labels[i].upper()) - 65 for i in graph["nodes"]]
+        draw(
+            Graph(graph["edges"]),
+            pos=pos,
+            ax=ax,
+            with_labels=True,
+            font_color="white",
+            vmin=min(colors),
+            vmax=max(colors),
+            cmap="tab10",
+            node_color=colors,
+        )
+    else:
+        draw(
+            Graph(graph["edges"]),
+            pos=pos,
+            ax=ax,
+            with_labels=True,
+            font_color="white",
+            node_color="skyblue",
+        )
 
 
 def draw_network(network, ax=None, edge_flows=None):
