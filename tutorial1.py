@@ -5,7 +5,7 @@ from networkx import DiGraph, Graph, draw, layout
 from networkx import draw_networkx_edge_labels as draw_edge_labels
 from networkx import draw_networkx_edges as draw_edges
 from networkx import draw_networkx_labels as draw_labels
-from numpy import sign
+import numpy as np
 
 
 def draw_graph(graph, ax=None, node_labels=None):
@@ -31,6 +31,10 @@ def draw_graph(graph, ax=None, node_labels=None):
     else:
         # Use evenly spaced colors if no labels provided
         norm_colors = np.linspace(0, 1, n)
+
+    # Create a new axis if needed
+    if ax is None:
+        _, ax = plt.subplots(figsize=(6, 6))
 
     # Draw the graph with normalized color mapping
     draw(
@@ -74,7 +78,7 @@ def draw_network(network, ax=None, edge_flows=None):
     labels = {i: f"b={value}" for i, value in values.items()}
 
     for k, color in cmap.items():
-        nodes = {i for i, value in values.items() if sign(value) == k}
+        nodes = {i for i, value in values.items() if np.sign(value) == k}
 
         draw_labels(
             g,
