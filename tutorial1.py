@@ -10,9 +10,11 @@ from numpy import sign
 
 def draw_graph(graph, ax=None, node_labels=None):
     n = len(graph["nodes"])
-    m = n // 5
-    
-    # Compute layout positions
+    if n == 0:
+        raise ValueError("Graph has no nodes to draw.")
+
+    # Compute layered circular layout
+    m = max(1, n // 5)  # Avoid division by zero for small graphs
     pos = {
         i: (
             cos(-(i * 2 * pi * m) / n + 0.5 * pi) / (i * m // n + 1),
@@ -21,29 +23,25 @@ def draw_graph(graph, ax=None, node_labels=None):
         for i in graph["nodes"]
     }
 
-    # Compute colors based on labels, if given
+    # Compute normalized colors
     if node_labels is not None:
-        colors = [ord(node_labels[i].upper()) - 65 for i in graph["nodes"]]
-        draw(
-            Graph(graph["edges"]),
-            pos=pos,
-            ax=ax,
-            with_labels=True,
-            font_color="white",
-            vmin=min(colors),
-            vmax=max(colors),
-            cmap="tab10",
-            node_color=colors,
-        )
+        # Convert labels to numeric codes (A=0, B=1, etc.) and normalize
+        raw_colors = np.array([ord(node_labels[i].upper()) - 65 for i in graph["nodes"]])
+        norm_colors = (raw_colors - raw_colors.min()) / (raw_colors.max() - raw_colors.min() + 1e-9)
     else:
-        draw(
-            Graph(graph["edges"]),
-            pos=pos,
-            ax=ax,
-            with_labels=True,
-            font_color="white",
-            node_color="skyblue",
-        )
+        # Use evenly spaced colors if no labels provided
+        norm_colors = np.linspace(0, 1, n)
+
+    # Draw the graph with normalized color mapping
+    draw(
+        Graph(graph["edges"]),
+        pos=pos,
+        ax=ax,
+        with_labels=True,
+        font_color="white",
+        node_color=norm_colors,
+        cmap="tab10",
+    )
 
 
 def draw_network(network, ax=None, edge_flows=None):
