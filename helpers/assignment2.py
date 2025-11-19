@@ -1,6 +1,5 @@
-from dataclasses import dataclass
-from itertools import product
 import pickle
+from dataclasses import dataclass
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -28,7 +27,7 @@ def make_static_data():
     # Download instance.
     import urllib.request
 
-    url = "https://github.com/alessandrozocca/MO2023/raw/main/data/assignment2.pkl"
+    url = "https://github.com/alessandrozocca/MO2025/raw/main/data/assignment2.pkl"
     response = urllib.request.urlopen(url)
     instance = pickle.loads(response.read())
 
@@ -76,6 +75,7 @@ def plot_instance(data: StaticData, demands=None):
     _, ax = plt.subplots(figsize=(6, 6))
 
     import urllib
+
     from PIL import Image
 
     url = "https://i.imgur.com/9PKCdUN.png"
