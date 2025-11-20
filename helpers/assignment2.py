@@ -182,8 +182,8 @@ def make_static_data():
         for j in range(NUM_NEIGHBORHOODS)
     }
 
-    # sample random integers between 8 and 14 for a total of NUM_STATIONS values
-    max_chargers_per_station = rng.integers(8, 14 + 1, NUM_STATIONS).tolist()
+    # sample random integers between 8 and 15 for a total of NUM_STATIONS values
+    max_chargers_per_station = rng.integers(8, 15 + 1, NUM_STATIONS).tolist()
 
     return StaticData(
         stations=list(range(NUM_STATIONS)),
