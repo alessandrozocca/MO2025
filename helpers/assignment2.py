@@ -131,7 +131,7 @@ class StaticData:
     demand_penalty: int
     station_coords: np.ndarray
     neighborhood_coords: np.ndarray
-    chargers_per_station: list[int]
+    max_chargers: list[int]
 
 
 def make_static_data():
@@ -183,7 +183,7 @@ def make_static_data():
     }
 
     # sample random integers between 15 and 30 for a total of NUM_STATIONS values
-    chargers_per_station = rng.integers(15, 30 + 1, NUM_STATIONS).tolist()
+    max_chargers_per_station = rng.integers(15, 30 + 1, NUM_STATIONS).tolist()
 
     return StaticData(
         stations=list(range(NUM_STATIONS)),
@@ -193,7 +193,7 @@ def make_static_data():
         demand_penalty=30,
         station_coords=stations_coords,
         neighborhood_coords=neighborhoods_coords,
-        chargers_per_station=chargers_per_station,
+        max_chargers=max_chargers_per_station,
     )
 
 
