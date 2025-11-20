@@ -124,13 +124,14 @@ def sample_polygon_min_distance(
 
 @dataclass
 class StaticData:
-    stations: int
-    neighborhoods: int
+    stations: list[int]
+    neighborhoods: list[int]
     fixed_costs: list[int]
     travel_costs: dict[tuple[int, int], int]
     demand_penalty: int
     station_coords: np.ndarray
     neighborhood_coords: np.ndarray
+    chargers_per_station: list[int]
 
 
 def make_static_data():
@@ -181,6 +182,9 @@ def make_static_data():
         for j in range(NUM_NEIGHBORHOODS)
     }
 
+    # sample random integers between 15 and 30 for a total of NUM_STATIONS values
+    chargers_per_station = rng.integers(15, 30 + 1, NUM_STATIONS).tolist()
+
     return StaticData(
         stations=list(range(NUM_STATIONS)),
         neighborhoods=list(range(NUM_NEIGHBORHOODS)),
@@ -189,6 +193,7 @@ def make_static_data():
         demand_penalty=30,
         station_coords=stations_coords,
         neighborhood_coords=neighborhoods_coords,
+        chargers_per_station=chargers_per_station,
     )
 
 
@@ -231,11 +236,8 @@ def make_demand_scenarios(
 def plot_instance(
     data: "StaticData",
     demands=None,
-    title="Static data",
+    title="Static data visualization",
     figsize=(12, 12),
-    station_color="blue",
-    neighborhood_color="blue",
-    point_alpha=0.6,
 ):
     import urllib
 
@@ -292,7 +294,7 @@ def plot_instance(
             data.neighborhood_coords[:, 0],
             data.neighborhood_coords[:, 1],
             s=80,
-            color=neighborhood_color,
+            color="blue",
             alpha=0.5,
             label="Neighborhoods",
         )
@@ -320,7 +322,7 @@ def plot_instance(
 
 
 def plot_solution(data: StaticData, build_decisions: dict, demand=None):
-    ax = plot_instance(data, demand, title="Optimal solution")
+    ax = plot_instance(data, demand, title="Visualization of the optimal solution")
 
     for idx, number_of_stations in build_decisions.items():
         ax.text(
