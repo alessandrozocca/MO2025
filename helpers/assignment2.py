@@ -158,14 +158,14 @@ def make_static_data():
         n_points=NUM_NEIGHBORHOODS,
         r_min=MIN_DIST_NEIGHBORHOODS,  # minimum distance between neighborhoods
         integer=True,
-        fixed_points=stations_coords,
-        dmin=30,
+        fixed_points=stations_coords,  # ensure neighborhoods are not too close to stations
+        dmin=30,  # minimum distance from stations
         seed=SEED + 2025,
     )
 
     # generate fixed costs randomly between 4 and 10
     rng = np.random.default_rng(2025)
-    fixed_costs = fixed_costs = rng.integers(4, 10 + 1, NUM_STATIONS).tolist()
+    fixed_costs = rng.integers(4, 10 + 1, NUM_STATIONS).tolist()
 
     # calculate Eucleadian distances between stations and neighborhoods and store in distances matrix
     distances = np.zeros((NUM_STATIONS, NUM_NEIGHBORHOODS))
@@ -181,8 +181,8 @@ def make_static_data():
     }
 
     return StaticData(
-        stations=NUM_STATIONS,
-        neighborhoods=NUM_NEIGHBORHOODS,
+        stations=list(range(NUM_STATIONS)),
+        neighborhoods=list(range(NUM_NEIGHBORHOODS)),
         fixed_costs=fixed_costs,
         travel_costs=travel_costs,
         demand_penalty=15,
