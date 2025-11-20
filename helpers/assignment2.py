@@ -238,6 +238,7 @@ def plot_instance(
 ):
     import urllib
 
+    import matplotlib.pyplot as plt
     from PIL import Image
 
     # Download the image from GitHub repository
