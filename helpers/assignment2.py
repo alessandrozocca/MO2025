@@ -1,148 +1,337 @@
-import pickle
 from dataclasses import dataclass
 
-import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
+from matplotlib.path import Path
+from scipy.spatial import cKDTree
 
 # ---------------------------------------------------------------------
-np.random.seed(1)
 
 NUM_STATIONS = 40
 NUM_NEIGHBORHOODS = 60
 NUM_SCENARIOS = 365
+MIN_DIST_STATIONS = 40
+MIN_DIST_NEIGHBORHOODS = 70
+SEED = 42
+MANHATTAN_VERTICES = np.array(
+    [
+        [600, 1580],
+        [140, 740],
+        [100, 300],
+        [35, 100],
+        [100, 20],
+        [220, 120],
+        [450, 150],
+        [505, 390],
+        [465, 530],
+        [800, 1030],
+        [800, 1130],
+        [940, 1320],
+        [880, 1580],
+    ]
+)
+
+CENTRAL_PARK_VERTICES = np.array([[405, 935], [495, 885], [745, 1325], [650, 1375]])
+
+
+def sample_polygon_min_distance(
+    poly_coords=MANHATTAN_VERTICES,
+    exclusion_coords=CENTRAL_PARK_VERTICES,
+    n_points=50,
+    r_min=40,
+    integer=False,
+    fixed_points=None,
+    dmin=50,
+    seed=42,
+):
+    """
+    Uniformly sample points inside a polygon with minimum distance r_min,
+    and ensure no point is closer than dmin to any point in fixed_points.
+
+    Parameters
+    ----------
+    poly_coords : array_like
+        Polygon coordinates (Nx2).
+    exclusion_coords : array_like, optional
+        Exclusion polygon coordinates.
+    n_points : int
+        Number of points to sample.
+    r_min : float
+        Minimum distance between sampled points.
+    integer : bool
+        Round sampled points to integers.
+    seed : int
+        Random seed.
+    fixed_points : array_like, optional
+        List of 2D points (Mx2) that new points must stay at least dmin away from.
+    dmin : float
+        Minimum distance to fixed_points.
+    """
+    rng = np.random.default_rng(seed)
+
+    poly_path = Path(poly_coords)
+    exclusion_path = Path(exclusion_coords)
+    fixed_points = (
+        np.array(fixed_points) if fixed_points is not None else np.empty((0, 2))
+    )
+
+    samples = []
+
+    # Bounding box for candidate sampling
+    xmin, ymin = poly_coords.min(axis=0)
+    xmax, ymax = poly_coords.max(axis=0)
+
+    attempts = 0
+    max_attempts = n_points * 1000  # safety to avoid infinite loops
+
+    while len(samples) < n_points and attempts < max_attempts:
+        attempts += 1
+        # Candidate point
+        P = rng.uniform([xmin, ymin], [xmax, ymax])
+        if integer:
+            P = np.round(P).astype(int)
+
+        # Inside main polygon
+        if not poly_path.contains_point(P):
+            continue
+        # Outside exclusion polygon
+        if exclusion_path is not None and exclusion_path.contains_point(P):
+            continue
+        # Check min distance among already sampled points
+        if samples:
+            tree = cKDTree(samples)
+            if tree.query(P, k=1)[0] < r_min:
+                continue
+        # Check distance to fixed points
+        if fixed_points.size > 0:
+            tree_fixed = cKDTree(fixed_points)
+            if tree_fixed.query(P, k=1)[0] < dmin:
+                continue
+
+        samples.append(P)
+
+    if len(samples) < n_points:
+        print(
+            f"Warning: Could only sample {len(samples)} points with r_min={r_min} and dmin={dmin}"
+        )
+
+    # Sort samples based on the distance to the origin for consistency
+    samples.sort(key=lambda point: np.linalg.norm(point))
+
+    return np.array(samples)
 
 
 @dataclass
 class StaticData:
-    stations: list[int]
-    neighborhoods: list[int]
+    stations: int
+    neighborhoods: int
     fixed_costs: list[int]
     travel_costs: dict[tuple[int, int], int]
     demand_penalty: int
-    coords: np.ndarray
+    station_coords: np.ndarray
+    neighborhood_coords: np.ndarray
 
 
 def make_static_data():
-    # Download instance.
-    import urllib.request
 
-    url = "https://github.com/alessandrozocca/MO2025/raw/main/data/assignment2.pkl"
-    response = urllib.request.urlopen(url)
-    instance = pickle.loads(response.read())
+    manhattan_coords = np.array(
+        [
+            [600, 1580],
+            [140, 740],
+            [100, 300],
+            [35, 100],
+            [100, 20],
+            [220, 120],
+            [450, 150],
+            [505, 390],
+            [465, 530],
+            [800, 1030],
+            [800, 1130],
+            [940, 1320],
+            [880, 1580],
+        ]
+    )
+    central_park_coords = np.array([[405, 935], [495, 885], [745, 1325], [650, 1375]])
 
-    # Generate random permutation to shuffle stations and neighborhoods locations.
-    permutation = np.random.permutation(range(NUM_STATIONS + NUM_NEIGHBORHOODS))
+    stations_coords = sample_polygon_min_distance(
+        manhattan_coords,
+        exclusion_coords=central_park_coords,
+        n_points=NUM_STATIONS,
+        r_min=MIN_DIST_STATIONS,  # minimum distance between stations
+        integer=True,
+        seed=SEED,
+    )
 
-    stations = list(range(NUM_STATIONS))
-    neighborhoods = list(range(NUM_NEIGHBORHOODS))
-    fixed_costs = np.random.randint(5, 10, NUM_STATIONS).tolist()
-    distances = instance["edge_weight"][permutation][:, permutation]
+    neighborhoods_coords = sample_polygon_min_distance(
+        manhattan_coords,
+        exclusion_coords=central_park_coords,
+        n_points=NUM_NEIGHBORHOODS,
+        r_min=MIN_DIST_NEIGHBORHOODS,  # minimum distance between neighborhoods
+        integer=True,
+        fixed_points=stations_coords,
+        dmin=30,
+        seed=SEED + 2025,
+    )
+
+    # generate fixed costs randomly between 4 and 10
+    rng = np.random.default_rng(2025)
+    fixed_costs = fixed_costs = rng.integers(4, 10 + 1, NUM_STATIONS).tolist()
+
+    # calculate Eucleadian distances between stations and neighborhoods and store in distances matrix
+    distances = np.zeros((NUM_STATIONS, NUM_NEIGHBORHOODS))
+    for i in range(NUM_STATIONS):
+        for j in range(NUM_NEIGHBORHOODS):
+            distances[i, j] = np.linalg.norm(
+                stations_coords[i] - neighborhoods_coords[j]
+            )
     travel_costs = {
-        (i, j): distances[i, j + NUM_STATIONS] for i in stations for j in neighborhoods
+        (i, j): int(round(distances[i, j]))
+        for i in range(NUM_STATIONS)
+        for j in range(NUM_NEIGHBORHOODS)
     }
-    coords = instance["node_coord"][permutation]
 
     return StaticData(
-        stations=stations,
-        neighborhoods=neighborhoods,
+        stations=NUM_STATIONS,
+        neighborhoods=NUM_NEIGHBORHOODS,
         fixed_costs=fixed_costs,
         travel_costs=travel_costs,
         demand_penalty=15,
-        coords=coords,
+        station_coords=stations_coords,
+        neighborhood_coords=neighborhoods_coords,
     )
 
 
-def generate_data(means: list, num_locations: int, num_samples: int = 365):
-    data = np.zeros((num_samples, num_locations))  # Switch dimensions
+def make_demand_scenarios(
+    num_locations: int = NUM_NEIGHBORHOODS,
+    num_samples: int = NUM_SCENARIOS,
+    means: list = [3, 4, 4, 4, 4, 3, 2],
+    seed: int = SEED,
+):
+    """
+    Generate demand scenarios for multiple locations over time.
+
+    Parameters
+    ----------
+    num_locations : int
+        Number of neighborhoods / locations.
+    num_samples : int
+        Number of time steps to generate (e.g., days).
+    means : list of int, optional
+        Weekly mean demand values (length 7). If None, defaults to [3,4,4,4,4,3,2].
+    seed : int
+        Random seed for reproducibility.
+
+    Returns
+    -------
+    np.ndarray
+        Array of shape (num_samples, num_locations) with Poisson-distributed demand values.
+    """
+
+    rng = np.random.default_rng(seed)
+    data = np.zeros((num_samples, num_locations), dtype=int)
 
     for j in range(num_samples):
-        mean = means[j % 7]  # get mean using modulo
-        data[j, :] = np.random.poisson(mean, num_locations)  # Switch indices
+        mean = means[j % 7]  # weekly cycle
+        data[j, :] = rng.poisson(mean, num_locations)
 
     return data
 
 
-def make_demand_scenarios():
-    means = [3, 4, 4, 4, 4, 3, 2]
-    return generate_data(means, NUM_NEIGHBORHOODS, NUM_SCENARIOS).astype(int)
+def plot_instance(
+    data: "StaticData",
+    demands=None,
+    title="Static data",
+    figsize=(12, 12),
+    station_color="blue",
+    neighborhood_color="blue",
+    point_alpha=0.6,
+):
 
+    ny_image = plt.imread("ny.png")
+    ny_image = np.flipud(ny_image)
+    _, ax = plt.subplots(figsize=figsize)
 
-def plot_instance(data: StaticData, demands=None):
-    """
-    Plots coordinates for all locations.
-    """
-    _, ax = plt.subplots(figsize=(6, 6))
+    # Original image dimensions
+    height = ny_image.shape[0]
+    width = ny_image.shape[1]
 
-    import urllib
+    # Pixel positions
+    step = 20
+    x_positions = np.arange(0, width - 6, step)
+    y_positions = np.arange(0, height - 3, step)
 
-    from PIL import Image
+    # Labels scaled by 10
+    x_labels = x_positions * 10
+    y_labels = y_positions * 10
 
-    url = "https://i.imgur.com/9PKCdUN.png"
+    ax.imshow(ny_image, origin="lower")
 
-    with urllib.request.urlopen(url) as url_response:
-        img = Image.open(url_response)
+    # Set ticks at positions, with labels scaled
+    ax.set_xticks(x_positions[::5])
+    ax.set_xticklabels(x_labels[::5], rotation=45, ha="center")
+    ax.set_yticks(y_positions[::5])
+    ax.set_yticklabels(y_labels[::5])
+    ax.grid(True)
 
-    ax.imshow(img, extent=[-5, 105, -5, 105])
+    # Plot stations
+    if data.stations > 0:
+        ax.scatter(
+            data.station_coords[:, 0],
+            data.station_coords[:, 1],
+            s=90,
+            facecolors="lightcoral",
+            edgecolors="red",
+            alpha=0.5,
+            marker="s",
+            label="Stations",
+        )
 
-    # Plot stations as blue circles.
-    ax.scatter(
-        data.coords[data.stations, 0],
-        data.coords[data.stations, 1],
-        s=75,
-        facecolors="lightblue",
-        edgecolors="black",
-        label="Station",
-    )
+    # Plot neighborhoods
+    if data.neighborhoods > 0:
+        ax.scatter(
+            data.neighborhood_coords[:, 0],
+            data.neighborhood_coords[:, 1],
+            s=80,
+            color=neighborhood_color,
+            alpha=0.5,
+            label="Neighborhoods",
+        )
+        if demands is not None:
+            # add demand value inside each neighborhood point
+            for idx, demand in enumerate(demands):
+                ax.text(
+                    data.neighborhood_coords[idx, 0],
+                    data.neighborhood_coords[idx, 1],
+                    int(demand),
+                    fontsize=8,
+                    ha="center",
+                    va="center",
+                    color="white",
+                )
 
-    # Plot neighborhoods as red circles.
-    offset = len(data.stations)
-    new_idcs = [idx + offset for idx in data.neighborhoods]
-    ax.scatter(
-        data.coords[new_idcs, 0],
-        data.coords[new_idcs, 1],
-        s=75,
-        facecolors="lightcoral",
-        edgecolors="black",
-        label="Neighborhood",
-    )
+    ax.set_xlabel("X-coordinate (in meters)")
+    ax.set_ylabel("Y-coordinate (in meters)")
 
-    # Plot demand for each neighborhood
-    if demands is not None:
-        for idx, demand in enumerate(demands):
-            ax.text(
-                data.coords[idx + offset, 0],
-                data.coords[idx + offset, 1],
-                demand,
-                fontsize=6,
-                ha="center",
-                va="center",
-            )
+    ax.set_title(title)
 
-    ax.set_xlabel("X-coordinate")
-    ax.set_ylabel("Y-coordinate")
-    ax.set_title("Static data")
-
-    plt.legend()
+    ax.legend()
 
     return ax
 
 
 def plot_solution(data: StaticData, build_decisions: dict, demand=None):
-    ax = plot_instance(data, demand)
+    ax = plot_instance(data, demand, title="Optimal solution")
 
-    # Plot stations in the solution with red circles
     for idx, number_of_stations in build_decisions.items():
         ax.text(
-            data.coords[idx, 0],
-            data.coords[idx, 1],
+            data.station_coords[idx, 0],
+            data.station_coords[idx, 1],
             int(number_of_stations),
-            fontsize=7,
+            fontsize=9,
             ha="center",
             va="center",
+            color="red",
         )
-
-    ax.set_title("Solution")
 
     plt.show()
 
