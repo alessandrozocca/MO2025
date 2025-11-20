@@ -182,8 +182,8 @@ def make_static_data():
         for j in range(NUM_NEIGHBORHOODS)
     }
 
-    # sample random integers between 15 and 30 for a total of NUM_STATIONS values
-    max_chargers_per_station = rng.integers(15, 30 + 1, NUM_STATIONS).tolist()
+    # sample random integers between 8 and 14 for a total of NUM_STATIONS values
+    max_chargers_per_station = rng.integers(8, 14 + 1, NUM_STATIONS).tolist()
 
     return StaticData(
         stations=list(range(NUM_STATIONS)),
@@ -200,7 +200,7 @@ def make_static_data():
 def make_demand_scenarios(
     num_locations: int = NUM_NEIGHBORHOODS,
     num_samples: int = NUM_SCENARIOS,
-    means: list = [6.7, 8.3, 7.2, 8.1, 9.2, 6.1, 5.3],
+    means: list = [10.7, 9.3, 8.2, 9.1, 10.2, 8.1, 7.3],
     seed: int = SEED,
 ):
     """
