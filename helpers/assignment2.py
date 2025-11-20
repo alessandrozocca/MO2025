@@ -1,5 +1,6 @@
 from dataclasses import dataclass
 
+import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 from matplotlib.path import Path
@@ -82,7 +83,7 @@ def sample_polygon_min_distance(
     xmax, ymax = poly_coords.max(axis=0)
 
     attempts = 0
-    max_attempts = n_points * 1000  # safety to avoid infinite loops
+    max_attempts = n_points * 2000  # safety to avoid infinite loops
 
     while len(samples) < n_points and attempts < max_attempts:
         attempts += 1
@@ -133,29 +134,18 @@ class StaticData:
 
 
 def make_static_data():
+    """
+    Generate static data for the facility location problem.
 
-    manhattan_coords = np.array(
-        [
-            [600, 1580],
-            [140, 740],
-            [100, 300],
-            [35, 100],
-            [100, 20],
-            [220, 120],
-            [450, 150],
-            [505, 390],
-            [465, 530],
-            [800, 1030],
-            [800, 1130],
-            [940, 1320],
-            [880, 1580],
-        ]
-    )
-    central_park_coords = np.array([[405, 935], [495, 885], [745, 1325], [650, 1375]])
+    Returns
+    -------
+    StaticData
+        An instance of StaticData containing the generated data.
+    """
 
     stations_coords = sample_polygon_min_distance(
-        manhattan_coords,
-        exclusion_coords=central_park_coords,
+        poly_coords=MANHATTAN_VERTICES,
+        exclusion_coords=CENTRAL_PARK_VERTICES,
         n_points=NUM_STATIONS,
         r_min=MIN_DIST_STATIONS,  # minimum distance between stations
         integer=True,
@@ -163,8 +153,8 @@ def make_static_data():
     )
 
     neighborhoods_coords = sample_polygon_min_distance(
-        manhattan_coords,
-        exclusion_coords=central_park_coords,
+        poly_coords=MANHATTAN_VERTICES,
+        exclusion_coords=CENTRAL_PARK_VERTICES,
         n_points=NUM_NEIGHBORHOODS,
         r_min=MIN_DIST_NEIGHBORHOODS,  # minimum distance between neighborhoods
         integer=True,
@@ -246,8 +236,16 @@ def plot_instance(
     neighborhood_color="blue",
     point_alpha=0.6,
 ):
+    import urllib
 
-    ny_image = plt.imread("ny.png")
+    from PIL import Image
+
+    # Download the image from GitHub repository
+    url = "https://github.com/alessandrozocca/MO2025/blob/e5fa6efc66e95a717f55e767137c363781c90df2/data/ny.png?raw=true"
+
+    with urllib.request.urlopen(url) as url_response:
+        ny_image = Image.open(url_response)
+
     ny_image = np.flipud(ny_image)
     _, ax = plt.subplots(figsize=figsize)
 
@@ -337,6 +335,8 @@ def plot_solution(data: StaticData, build_decisions: dict, demand=None):
 
 
 # ---------------------------------------------------------------------
+
+
 def read_elastic_net_data():
     """
     Returns a features matrix X and the target vector y.
