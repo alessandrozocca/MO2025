@@ -8,12 +8,12 @@ from scipy.spatial import cKDTree
 
 # ---------------------------------------------------------------------
 
-NUM_STATIONS = 40
-NUM_NEIGHBORHOODS = 55
+NUM_STATIONS = 35
+NUM_NEIGHBORHOODS = 50
 NUM_SCENARIOS = 365
 MIN_DIST_STATIONS = 40
 MIN_DIST_NEIGHBORHOODS = 75
-SEED = 42
+SEED = 2025
 MANHATTAN_VERTICES = np.array(
     [
         [600, 1580],
@@ -161,13 +161,13 @@ def make_static_data():
         r_min=MIN_DIST_NEIGHBORHOODS,  # minimum distance between neighborhoods
         integer=True,
         fixed_points=stations_coords,  # ensure neighborhoods are not too close to stations
-        dmin=30,  # minimum distance from stations
-        seed=SEED + 2025,
+        dmin=35,  # minimum distance from stations
+        seed=SEED + 42,
     )
 
-    # generate fixed costs randomly between 4 and 10
-    rng = np.random.default_rng(2025)
-    fixed_costs = rng.integers(4, 10 + 1, NUM_STATIONS).tolist()
+    # generate fixed costs randomly between 6 and 16
+    rng = np.random.default_rng(SEED)
+    fixed_costs = rng.integers(6, 16 + 1, NUM_STATIONS).tolist()
 
     # calculate Eucleadian distances between stations and neighborhoods and store in distances matrix
     distances = np.zeros((NUM_STATIONS, NUM_NEIGHBORHOODS))
@@ -177,20 +177,20 @@ def make_static_data():
                 stations_coords[i] - neighborhoods_coords[j]
             )
     travel_costs = {
-        (i, j): round(2.8 * math.sqrt(distances[i, j]) - 5, 2)  # travel cost function
+        (i, j): round(3.1 * math.sqrt(distances[i, j]) - 5, 2)  # travel cost function
         for i in range(NUM_STATIONS)
         for j in range(NUM_NEIGHBORHOODS)
     }
 
-    # sample random integers between 8 and 15 for a total of NUM_STATIONS values
-    max_chargers_per_station = rng.integers(8, 15 + 1, NUM_STATIONS).tolist()
+    # sample random integers between 6 and 16 for a total of NUM_STATIONS values
+    max_chargers_per_station = rng.integers(6, 18 + 1, NUM_STATIONS).tolist()
 
     return StaticData(
         stations=list(range(NUM_STATIONS)),
         neighborhoods=list(range(NUM_NEIGHBORHOODS)),
         fixed_costs=fixed_costs,
         travel_costs=travel_costs,
-        demand_penalty=30,
+        demand_penalty=45,
         station_coords=stations_coords,
         neighborhood_coords=neighborhoods_coords,
         max_chargers=max_chargers_per_station,
@@ -200,7 +200,7 @@ def make_static_data():
 def make_demand_scenarios(
     num_locations: int = NUM_NEIGHBORHOODS,
     num_samples: int = NUM_SCENARIOS,
-    means: list = [10.7, 9.3, 8.2, 9.1, 10.2, 8.1, 7.3],
+    means: list = [10.5, 11.3, 10.1, 11.5, 10.1, 6.1, 5.9],
     seed: int = SEED,
 ):
     """
