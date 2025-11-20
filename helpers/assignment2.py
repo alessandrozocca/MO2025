@@ -9,10 +9,10 @@ from scipy.spatial import cKDTree
 # ---------------------------------------------------------------------
 
 NUM_STATIONS = 40
-NUM_NEIGHBORHOODS = 60
+NUM_NEIGHBORHOODS = 55
 NUM_SCENARIOS = 365
 MIN_DIST_STATIONS = 40
-MIN_DIST_NEIGHBORHOODS = 70
+MIN_DIST_NEIGHBORHOODS = 75
 SEED = 42
 MANHATTAN_VERTICES = np.array(
     [
@@ -195,7 +195,7 @@ def make_static_data():
 def make_demand_scenarios(
     num_locations: int = NUM_NEIGHBORHOODS,
     num_samples: int = NUM_SCENARIOS,
-    means: list = [6, 8, 7, 8, 9, 6, 5],
+    means: list = [6.7, 8.3, 7.2, 8.1, 9.2, 6.1, 5.3],
     seed: int = SEED,
 ):
     """
