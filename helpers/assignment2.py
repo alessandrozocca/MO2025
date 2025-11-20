@@ -142,6 +142,7 @@ def make_static_data():
     StaticData
         An instance of StaticData containing the generated data.
     """
+    import math
 
     stations_coords = sample_polygon_min_distance(
         poly_coords=MANHATTAN_VERTICES,
@@ -175,7 +176,7 @@ def make_static_data():
                 stations_coords[i] - neighborhoods_coords[j]
             )
     travel_costs = {
-        (i, j): int(round(distances[i, j]))
+        (i, j): round(2.8 * math.sqrt(distances[i, j]) - 5, 2)  # travel cost function
         for i in range(NUM_STATIONS)
         for j in range(NUM_NEIGHBORHOODS)
     }
@@ -185,7 +186,7 @@ def make_static_data():
         neighborhoods=list(range(NUM_NEIGHBORHOODS)),
         fixed_costs=fixed_costs,
         travel_costs=travel_costs,
-        demand_penalty=15,
+        demand_penalty=30,
         station_coords=stations_coords,
         neighborhood_coords=neighborhoods_coords,
     )
@@ -194,7 +195,7 @@ def make_static_data():
 def make_demand_scenarios(
     num_locations: int = NUM_NEIGHBORHOODS,
     num_samples: int = NUM_SCENARIOS,
-    means: list = [3, 4, 4, 4, 4, 3, 2],
+    means: list = [6, 8, 7, 8, 9, 6, 5],
     seed: int = SEED,
 ):
     """
