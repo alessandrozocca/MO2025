@@ -273,7 +273,7 @@ def plot_instance(
     ax.grid(True)
 
     # Plot stations
-    if data.stations > 0:
+    if len(data.stations) > 0:
         ax.scatter(
             data.station_coords[:, 0],
             data.station_coords[:, 1],
@@ -286,7 +286,7 @@ def plot_instance(
         )
 
     # Plot neighborhoods
-    if data.neighborhoods > 0:
+    if len(data.neighborhoods) > 0:
         ax.scatter(
             data.neighborhood_coords[:, 0],
             data.neighborhood_coords[:, 1],
