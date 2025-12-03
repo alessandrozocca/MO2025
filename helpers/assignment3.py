@@ -9,10 +9,13 @@ from matplotlib.colors import TABLEAU_COLORS
 
 def get_network():
     """Get a networkx MultiDiGraph object representing the area specified in the query."""
-    center = "Oudezijds Achterburgwal 149, Amsterdam, The Netherlands"
+
+    lat = 52.371506
+    lon = 4.897318
+    center_point = (lat, lon)
     radius = 1100
-    return osmnx.graph.graph_from_address(
-        center, radius, network_type="walk", simplify=True
+    return osmnx.graph.graph_from_point(
+        center_point, radius, network_type="walk", simplify=True
     )
 
 
