@@ -245,7 +245,7 @@ def plot_instance(
     from PIL import Image
 
     # Download the image from GitHub repository
-    url = "https://github.com/alessandrozocca/MO2025/blob/e5fa6efc66e95a717f55e767137c363781c90df2/data/ny.png?raw=true"
+    url = "https://raw.githubusercontent.com/alessandrozocca/MO2025/1c9188c98e0ec5071887df32b5041d2acc7be4d2/data/ny.png"
 
     with urllib.request.urlopen(url) as url_response:
         ny_image = Image.open(url_response)
